@@ -1,4 +1,4 @@
-# AutoPlexFormat
+# MovieFilenameFomater
 
 AutoPlexFormat is a Python script that automatically renames movie and TV show files into a **Plex-friendly format** using the OpenTyphoon AI API. It scans a directory, sends filenames to the API, and renames them according to standardized naming rules.
 
