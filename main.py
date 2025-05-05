@@ -1,18 +1,18 @@
 import os
+import sys
 import requests
 from ollama import chat
 from ollama import ChatResponse
 from ollama import Client
 
 # === Configuration ===
-USE_OLLAMA = True  # Toggle between Ollama (True) and OpenTyphoon (False)
+USE_OLLAMA = False  # Toggle between Ollama (True) and OpenTyphoon (False)
 
-DIRECTORY = "/root/git/MovieFilenameFomater/test"
 ALLOWED_EXTENSIONS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv"}
 
 # === OpenTyphoon Config ===
 OPENTYPHOON_API_URL = "https://api.opentyphoon.ai/v1/chat/completions"
-OPENTYPHOON_API_KEY = os.environ.get("OPENTYPHOON_API_KEY", "")  # or use env var
+OPENTYPHOON_API_KEY = os.environ.get("OPENTYPHOON_API_KEY", "sk-TZZUkE3ONWYnhHC7erF9dBcHVYoJK1gXweglYBghdZMn4hfM")  # or use env var
 OPENTYPHOON_MODEL = "typhoon-v2-70b-instruct"
 
 # === Ollama Config ===
@@ -20,10 +20,9 @@ OLLAMA_API_URL = "http://localhost:11434"
 OLLAMA_MODEL = "gemma3"
 
 client = Client(
-  host=OLLAMA_API_URL,
-  headers={'x-some-header': 'some-value'}
+    host=OLLAMA_API_URL,
+    headers={'x-some-header': 'some-value'}
 )
-
 
 # === Shared Prompt ===
 SYSTEM_PROMPT = """
@@ -51,7 +50,6 @@ High.Potential.S01E01.Pilot.1080p.HS.WEB-DL.DDP5.1.H.264-MESSI@BearBIT → High 
 The.Dark.Knight.2008.2160p.UHD.BluRay.HDR.x265 → The Dark Knight (2008)
 """
 
-
 def get_new_filename(filename):
     """Get a cleaned filename from either Ollama or OpenTyphoon."""
     if USE_OLLAMA:
@@ -59,12 +57,10 @@ def get_new_filename(filename):
     else:
         return get_filename_from_opentyphoon(filename)
 
-
 def get_filename_from_ollama(filename):
-    
     response: ChatResponse = client.chat(model=OLLAMA_MODEL, messages=[
-    {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "user", "content": filename}
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": filename}
     ])
 
     try:
@@ -72,7 +68,6 @@ def get_filename_from_ollama(filename):
     except requests.exceptions.RequestException as e:
         print(f"[Ollama] Error: {e}")
         return None
-
 
 def get_filename_from_opentyphoon(filename):
     headers = {
@@ -98,8 +93,12 @@ def get_filename_from_opentyphoon(filename):
         print(f"[OpenTyphoon] Error: {e}")
         return None
 
-
 def rename_files_in_directory(directory):
+    # Verify directory exists
+    if not os.path.isdir(directory):
+        print(f"Error: Directory '{directory}' does not exist.")
+        return
+
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
 
@@ -115,7 +114,15 @@ def rename_files_in_directory(directory):
                 print(f"✅ Renamed: {filename} -> {new_name}{os.path.splitext(filename)[1]}")
             except Exception as e:
                 print(f"❌ Error renaming {filename}: {e}")
-
+        else:
+            print(f"❌ Failed to get new name for {filename}")
 
 if __name__ == "__main__":
-    rename_files_in_directory(DIRECTORY)
+    # Check if directory path is provided as command-line argument
+    if len(sys.argv) < 2:
+        print("Error: No directory path provided.")
+        print("Usage: python main.py <directory_path>")
+        sys.exit(1)
+
+    directory = sys.argv[1]
+    rename_files_in_directory(directory)
