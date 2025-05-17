@@ -117,23 +117,37 @@ def rename_files_in_directory(directory):
         print(f"Error: Directory '{directory}' does not exist.")
         return
 
+    actions = []
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
-
         if not os.path.isfile(file_path) or not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
             continue
-
         print(f"Processing: {filename}")
         new_name = get_new_filename(filename)
         if new_name:
-            new_file_path = os.path.join(directory, new_name + os.path.splitext(filename)[1])
-            try:
-                os.rename(file_path, new_file_path)
-                print(f"✅ Renamed: {filename} -> {new_name}{os.path.splitext(filename)[1]}")
-            except Exception as e:
-                print(f"❌ Error renaming {filename}: {e}")
+            new_path = os.path.join(directory, new_name + os.path.splitext(filename)[1])
+            actions.append((file_path, new_path))
         else:
             print(f"❌ Failed to get new name for {filename}")
+
+    if not actions:
+        print("No files to rename.")
+        return
+
+    print("\nProposed renames:")
+    for old, new in actions:
+        print(f"{os.path.basename(old)} -> {os.path.basename(new)}")
+    choice = input("\nApply these changes? [y/N]: ").strip().lower()
+    if choice not in ("y", "yes"):
+        print("Aborted.")
+        return
+
+    for old, new in actions:
+        try:
+            os.rename(old, new)
+            print(f"✅ Renamed: {os.path.basename(old)} -> {os.path.basename(new)}")
+        except Exception as e:
+            print(f"❌ Error renaming {os.path.basename(old)}: {e}")
 
 if __name__ == "__main__":
     # Check if directory path is provided as command-line argument
