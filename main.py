@@ -4,28 +4,30 @@ import requests
 from ollama import chat
 from ollama import ChatResponse
 from ollama import Client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # === Configuration ===
-USE_OLLAMA = False  # Toggle between Ollama (True) and OpenTyphoon (False)
+USE_OLLAMA = os.getenv("USE_OLLAMA", "True").lower() in ("true", "1", "yes")  # Toggle between Ollama (True) and OpenTyphoon (False)
 
 ALLOWED_EXTENSIONS = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv"}
 
 # === OpenTyphoon Config ===
-OPENTYPHOON_API_URL = "https://api.opentyphoon.ai/v1/chat/completions"
-OPENTYPHOON_API_KEY = os.environ.get("OPENTYPHOON_API_KEY", "sk-TZZUkE3ONWYnhHC7erF9dBcHVYoJK1gXweglYBghdZMn4hfM")  # or use env var
-OPENTYPHOON_MODEL = "typhoon-v2-70b-instruct"
+OPENTYPHOON_API_URL = os.getenv("OPENTYPHOON_API_URL", "https://api.opentyphoon.ai/v1/chat/completions")
+OPENTYPHOON_API_KEY = os.getenv("OPENTYPHOON_API_KEY")
+OPENTYPHOON_MODEL = os.getenv("OPENTYPHOON_MODEL", "typhoon-v2-70b-instruct")
 
 # === Ollama Config ===
-OLLAMA_API_URL = "http://localhost:11434"
-OLLAMA_MODEL = "gemma3"
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:12b")
 
 client = Client(
-    host=OLLAMA_API_URL,
-    headers={'x-some-header': 'some-value'}
+    host=OLLAMA_API_URL
 )
 
 # === Shared Prompt ===
-SYSTEM_PROMPT = """
+DEFAULT_SYSTEM_PROMPT = """
 You are a movie renaming assistant that formats filenames into a Plex-friendly format. Given a filename, you must rename it into a structured format while removing unnecessary details.
 
 Rules:
@@ -44,11 +46,27 @@ Rules:
 4. Standardize season/episode notation as SXXEYY.
 5. Ignore file extensions like .mp4, .mkv, .avi.
 
+Special Rules:
+1.if have Warning for name Task condition Rule from User, give it priority over default system prompt.
+
 Examples:
 EP.01 ดอกเตอร์สโตน ซีซัน 2 → S02E01 ดอกเตอร์สโตน  
 High.Potential.S01E01.Pilot.1080p.HS.WEB-DL.DDP5.1.H.264-MESSI@BearBIT → High Potential S01E01  
 The.Dark.Knight.2008.2160p.UHD.BluRay.HDR.x265 → The Dark Knight (2008)
 """
+PROMPT_FILE = os.getenv("PROMPT_FILE", "prompt.txt")
+file_prompt = ""
+try:
+    with open(PROMPT_FILE, "r", encoding="utf-8") as f:
+        file_prompt = f.read().strip()
+except FileNotFoundError:
+    print(f"Warning: Prompt file '{PROMPT_FILE}' not found. Using default system prompt.")
+
+if file_prompt:
+    SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+    print(f"Loaded additional prompt from '{PROMPT_FILE}', giving it priority over default prompt.")
+else:
+    SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
 
 def get_new_filename(filename):
     """Get a cleaned filename from either Ollama or OpenTyphoon."""
@@ -60,7 +78,7 @@ def get_new_filename(filename):
 def get_filename_from_ollama(filename):
     response: ChatResponse = client.chat(model=OLLAMA_MODEL, messages=[
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": filename}
+        {"role": "user", "content":  "Warning! rename movie name Rule: "+ file_prompt +"\n"+ filename }
     ])
 
     try:
@@ -79,7 +97,7 @@ def get_filename_from_opentyphoon(filename):
         "model": OPENTYPHOON_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": filename}
+            {"role": "user", "content": "Warning! rename movie name Rule: "+ file_prompt +"\n"+ filename }
         ],
         "temperature": 0.2
     }
