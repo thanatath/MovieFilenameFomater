@@ -1,63 +1,64 @@
-# MovieFilenameFomater
+# MovieFilenameFormatter
 
-AutoPlexFormat is a Python script that automatically renames movie and TV show files into a **Plex-friendly format** using the OpenTyphoon AI API. It scans a directory, sends filenames to the API, and renames them according to standardized naming rules.
+MovieFilenameFormatter is a Python script that automatically renames movie and TV show files into a **Plex-friendly format** using AI models (Ollama or OpenTyphoon).
 
-<img src="./screenshot.png">
+<img src="./screenshot.png" alt="Screenshot">
 
 ## Features
-- **Automatic renaming** of movies and TV shows based on predefined rules
-- **Removes unnecessary details** (e.g., resolution, encoding format, release groups)
-- **Standardizes naming conventions** (`SXXEYY` for TV shows, `Movie Name (Year)` for movies)
-- **Supports multiple video formats** (`.mp4`, `.mkv`, `.avi`, etc.)
-- **Error handling** for API failures and renaming issues
+- Automatic batch renaming with a single confirmation prompt
+- Supports both Ollama and OpenTyphoon AI backends
+- Configurable via a `.env` file and an optional `prompt.txt` override
+- Removes unnecessary details (resolution, encoding, release groups)
+- Standardizes naming (`SXXEYY` for TV, `Movie Name (Year)` for films)
+- Supports `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`
 
-## Installation
-### Prerequisites
+## Prerequisites
 - Python 3.7+
-- `requests` library (install using pip)
+- `requests` and `python-dotenv` libraries
 
-```sh
-pip install requests
+```powershell
+pip install requests python-dotenv ollama
 ```
+
+## Configuration
+1. Create a `.env` file in the project root (see [.env.example](.env) for a template):
+   ```properties
+   USE_OLLAMA=True                     # True for Ollama, False for OpenTyphoon
+   OPENTYPHOON_API_URL=...             # OpenTyphoon endpoint
+   OPENTYPHOON_API_KEY=your_key_here   # Your OpenTyphoon API key
+   OPENTYPHOON_MODEL=typhoon-v2-70b-instruct
+   OLLAMA_API_URL=http://localhost:11434
+   OLLAMA_MODEL=gemma3:12b
+   PROMPT_FILE=prompt.txt              # Optional override prompt
+   ```
+2. (Optional) Create `prompt.txt` to supply custom instructions. If present and non-empty, its content takes priority over the default system prompt.
 
 ## Usage
-### 1. Set Up Your API Key
-Before running the script, you need to set your **OpenTyphoon API Key**.
+Run the renaming script on a target directory:
 
-#### **Option 1: Set Environment Variable (Recommended)**
-```sh
-export OPENTYPHOON_API_KEY="your_api_key_here"
+```powershell
+python main.py "C:\Path\To\Your\MediaFolder"
 ```
 
-#### **Option 2: Hardcode API Key (Not Recommended)**
-Edit the script and replace `"YOUR_API_KEY"` with your actual key.
+1. The script analyzes filenames and suggests a batch of new names.
+2. You’ll see a summary of proposed renames.
+3. Confirm once with `y` or `yes` to apply all changes.
 
-### 2. Run the Script
-```sh
-python rename_movies.py
+## Examples
+Before:
 ```
-
-### 3. File Renaming Example
-#### **Before Running the Script:**
+High.Potential.S01E01.Pilot.1080p.HS.WEB-DL.mkv
+The.Dark.Knight.2008.x265.mp4
 ```
-High.Potential.S01E01.Pilot.1080p.HS.WEB-DL.DDP5.1.H.264-MESSI@BearBIT.mkv
-The.Dark.Knight.2008.2160p.UHD.BluRay.HDR.x265.mp4
-```
-
-#### **After Running the Script:**
+After:
 ```
 High Potential S01E01.mkv
 The Dark Knight (2008).mp4
 ```
 
-## Configuration
-Modify the script's settings:
-- **Directory Path:** Edit the `DIRECTORY` variable to set the folder containing your media files.
-- **Allowed File Types:** Adjust the `ALLOWED_EXTENSIONS` set if needed.
-
 ## Contributing
-Feel free to open issues or submit pull requests!
+Feel free to open issues or submit pull requests.
 
 ## License
-This project is licensed under the MIT License.
+MIT License
 
